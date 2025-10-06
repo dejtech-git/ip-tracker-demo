@@ -1,0 +1,44 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+app-local.py
+run-local.sh
+
+# Logs
+*.log
+
+# Archives
+*.zip
+*.tar.gz
+
+# HAR files
+*.har
+
+# Office temp files
+~$*

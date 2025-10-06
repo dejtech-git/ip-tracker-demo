@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>QR Code - Scan to Access</h5>
+            </div>
+            <div class="card-body text-center">
+                <img id="qr-code" src="/qr-code" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                <p class="mt-2 small">{{ website_url }}</p>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Your Connection</h5>
+            </div>
+            <div class="card-body">
+                <strong>Your IP:</strong> {{ current_ip }}<br>
+                <strong>Status:</strong> <span class="badge bg-success">Connected</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h5>Connected Users</h5>
+                <span class="badge bg-primary" id="connection-count">0</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Browser</th>
+                                <th>OS</th>
+                                <th>Duration</th>
+                                <th>EC2 Instance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-table">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const socket = io({% if secret_path %}{ path: '/{{ secret_path }}/socket.io' }{% endif %});
+const sessionId = '{{ session_id }}';
+const websiteUrl = '{{ website_url }}';
+let heartbeatInterval;
+let durationInterval;
+
+// Check for old session and cleanup
+const oldSessionId = sessionStorage.getItem('sessionId');
+if (oldSessionId && oldSessionId !== sessionId) {
+    console.log('Cleaning up old session:', oldSessionId);
+}
+
+// Store new session ID
+sessionStorage.setItem('sessionId', sessionId);
+
+// WebSocket connection
+socket.on('connect', function() {
+    console.log('Connected to server');
+    
+    // Cleanup old session if exists
+    if (oldSessionId && oldSessionId !== sessionId) {
+        socket.emit('cleanup_old_session', {old_session_id: oldSessionId});
+    }
+    
+    socket.emit('register_session', {session_id: sessionId});
+    startHeartbeat();
+    startDurationUpdater();
+});
+
+socket.on('disconnect', function() {
+    console.log('Disconnected from server');
+    stopHeartbeat();
+    stopDurationUpdater();
+});
+
+socket.on('sessions_update', function(data) {
+    updateSessionsTable(data.sessions);
+});
+
+socket.on('heartbeat_ack', function(data) {
+    console.log('Heartbeat acknowledged');
+});
+
+function startHeartbeat() {
+    heartbeatInterval = setInterval(() => {
+        socket.emit('heartbeat', {session_id: sessionId});
+    }, 30000); // 30 seconds
+}
+
+function stopHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+}
+
+function startDurationUpdater() {
+    durationInterval = setInterval(() => {
+        updateDurations();
+    }, 1000); // Update every second
+}
+
+function stopDurationUpdater() {
+    if (durationInterval) {
+        clearInterval(durationInterval);
+    }
+}
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateDurations() {
+    document.querySelectorAll('.duration-cell').forEach(cell => {
+        const startTime = parseFloat(cell.dataset.start);
+        const duration = Math.floor((Date.now() / 1000) - startTime);
+        cell.textContent = formatDuration(duration);
+    });
+}
+
+function updateSessionsTable(sessions) {
+    const tbody = document.getElementById('sessions-table');
+    const countBadge = document.getElementById('connection-count');
+    
+    tbody.innerHTML = '';
+    countBadge.textContent = sessions.length;
+    
+    // Sort sessions - current user first
+    sessions.sort((a, b) => {
+        if (a.id === sessionId) return -1;
+        if (b.id === sessionId) return 1;
+        return 0;
+    });
+    
+    sessions.forEach(session => {
+        const row = tbody.insertRow();
+        const isCurrentUser = session.id === sessionId;
+        
+        if (isCurrentUser) {
+            row.classList.add('table-warning');
+        }
+        
+        // Calculate initial duration
+        const duration = Math.floor((Date.now() / 1000) - session.timestamp);
+        const durationStr = formatDuration(duration);
+        
+        row.innerHTML = `
+            <td>${session.ip} ${isCurrentUser ? '<span class="badge bg-warning">You</span>' : ''}</td>
+            <td>${session.headers?.browser || 'Unknown'}</td>
+            <td>${session.headers?.os || 'Unknown'}</td>
+            <td class="duration-cell" data-start="${session.timestamp}">${durationStr}</td>
+            <td><span class="badge bg-info">${session.instance_id || 'local'}</span></td>
+            <td><span class="badge bg-success">Online</span></td>
+        `;
+    });
+}
+
+// Handle page unload
+window.addEventListener('beforeunload', function() {
+    socket.disconnect();
+});
+</script>
+{% endblock %}

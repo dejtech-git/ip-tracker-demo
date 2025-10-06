@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Maximum Users Reached{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="alert alert-warning text-center">
+            <h2>Maximum user has reached. Please retry</h2>
+            <p class="mt-3">The maximum number of concurrent connections (20) has been reached.</p>
+            <p>Please try again in a few moments.</p>
+            <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
