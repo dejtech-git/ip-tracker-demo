@@ -1,4 +1,4 @@
-# Real-time IP Tracker - Workshop Demo
+# Real-time IP Tracker for ES Sharing - Workshop Demo
 
 This repository contains two main components for the AWS workshop:
 

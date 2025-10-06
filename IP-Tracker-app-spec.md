@@ -1,4 +1,4 @@
-# Real-time IP Tracker Application
+# Real-time IP Tracker for ES Sharing Application
 
 A real-time web application that displays connected users' IP addresses and browser information with automatic session management, deployed on AWS with auto-scaling infrastructure.
 

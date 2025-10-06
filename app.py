@@ -148,5 +148,5 @@ if __name__ == '__main__':
     cleanup_worker = threading.Thread(target=cleanup_thread, daemon=True)
     cleanup_worker.start()
     
-    print("Starting Real-time IP Tracker on http://localhost:8800")
+    print("Starting Real-time IP Tracker for ES Sharing on http://localhost:8800")
     socketio.run(app, host='0.0.0.0', port=8800, debug=False, allow_unsafe_werkzeug=True)
