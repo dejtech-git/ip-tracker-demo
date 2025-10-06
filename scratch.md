@@ -176,6 +176,174 @@ CloudWatch Investigations doesn't need application documentation - it analyzes a
 
 ---
 
+## CloudWatch Investigation → GitHub Q Developer Integration
+
+### Architecture Flow
+```
+503 Errors → CloudWatch Alarm → SNS → Lambda (Start Investigation) → 
+CloudWatch Investigation (AI Analysis) → EventBridge → Lambda (Create Issue) → 
+GitHub Issue → Amazon Q Developer → Pull Request
+```
+
+### Setup Steps
+
+**1. Create GitHub Personal Access Token**
+```bash
+# Go to: https://github.com/settings/tokens
+# Generate new token (classic)
+# Scopes needed: repo (full control)
+# Copy the token
+```
+
+**2. Package Lambda Functions**
+```bash
+cd lambda
+./package.sh
+# This creates:
+#   - lambda_start_investigation.zip
+#   - lambda_github_issue.zip
+```
+
+**3. Deploy Infrastructure**
+```bash
+terraform apply
+# Note the github_token_secret_arn output
+```
+
+**4. Add GitHub Token to Secrets Manager**
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id ip-tracker-github-token \
+  --secret-string "ghp_your_token_here" \
+  --region us-east-1
+```
+
+**5. Configure CloudWatch Investigations**
+```bash
+# In AWS Console:
+# 1. Go to CloudWatch → AI Operations → Investigations
+# 2. Complete setup wizard if not done
+# 3. Enable CloudTrail integration
+# 4. Configure IAM roles
+```
+
+**6. Install Amazon Q Developer in GitHub**
+```bash
+# Go to: https://github.com/apps/amazon-q-developer
+# Click "Install"
+# Select repository: dejtech-git/ip-tracker-demo
+# Grant permissions
+```
+
+### Demo Execution
+
+**Step 1: Trigger 503 Errors**
+```bash
+# Open 7+ browser tabs to the application
+# This exceeds capacity (2 instances × 3 connections = 6)
+```
+
+**Step 2: Monitor CloudWatch Alarm**
+```bash
+aws cloudwatch describe-alarms \
+  --alarm-names ip-tracker-503-investigation-trigger \
+  --region us-east-1
+```
+
+**Step 3: Wait for Investigation to Start** (1-2 minutes)
+```bash
+# Check CloudWatch Investigations console
+# Investigation should be "In Progress"
+```
+
+**Step 4: Wait for Investigation to Complete** (5-10 minutes)
+```bash
+# Investigation analyzes:
+# - ALB metrics (503 errors)
+# - EC2 instance metrics (connection counts)
+# - CloudTrail events (no config changes)
+# - Correlation: All instances at max capacity
+```
+
+**Step 5: GitHub Issue Created** (within 1 minute of completion)
+```bash
+# Check: https://github.com/dejtech-git/ip-tracker-demo/issues
+# Issue should have label: "Amazon Q development agent"
+```
+
+**Step 6: Amazon Q Developer Generates PR** (2-5 minutes)
+```bash
+# Q Developer:
+# 1. Reads investigation findings
+# 2. Analyzes main.tf
+# 3. Generates solution (increase desired_capacity)
+# 4. Creates pull request
+```
+
+**Step 7: Review and Merge PR**
+```bash
+# Review the changes
+# Merge pull request
+# Terraform apply will increase capacity
+```
+
+### Verification Commands
+
+**Check Investigation Status:**
+```bash
+aws cloudwatch list-investigations \
+  --max-results 5 \
+  --region us-east-1
+```
+
+**Check Lambda Logs:**
+```bash
+# Start Investigation Lambda
+aws logs tail /aws/lambda/ip-tracker-start-investigation --follow
+
+# GitHub Issue Lambda
+aws logs tail /aws/lambda/ip-tracker-investigation-to-github --follow
+```
+
+**Monitor 503 Errors:**
+```bash
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/ApplicationELB \
+  --metric-name HTTPCode_Target_5XX_Count \
+  --dimensions Name=LoadBalancer,Value=<alb-arn-suffix> \
+  --start-time $(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 60 \
+  --statistics Sum \
+  --region us-east-1
+```
+
+### Key Benefits
+
+✅ **AI-Driven Root Cause Analysis** - CloudWatch Investigation discovers the issue
+✅ **Automated Remediation** - No manual intervention needed
+✅ **AI → AI Workflow** - CloudWatch AI findings → Q Developer AI solution
+✅ **Complete Audit Trail** - Investigation + GitHub issue + PR history
+✅ **Production-Ready** - Validates issue before creating remediation request
+
+### Troubleshooting
+
+**Issue: Investigation doesn't start**
+- Check CloudWatch alarm fired: `aws cloudwatch describe-alarm-history`
+- Check Lambda logs for start_investigation function
+- Verify IAM permissions for CloudWatch Investigations
+
+**Issue: GitHub issue not created**
+- Check EventBridge rule triggered
+- Verify GitHub token in Secrets Manager
+- Check Lambda logs for create_github_issue function
+- Verify GitHub token has `repo` scope
+
+**Issue: Q Developer doesn't pick up issue**
+- Verify label "Amazon Q development agent" is applied
+- Check Q Developer is installed in repository
+- Ensure issue description is clear and actionable
+
 ## Additional Notes
 
 _Add your workshop observations and highlights here..._

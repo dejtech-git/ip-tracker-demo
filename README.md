@@ -14,6 +14,13 @@ Hands-on demonstration of AWS CloudWatch Investigations for AI-assisted troubles
 
 **See:** [CLOUDWATCH_INVESTIGATIONS_DEMO.md](./CLOUDWATCH_INVESTIGATIONS_DEMO.md) for demo scenarios and instructions.
 
+### 3. Automated Incident Response (NEW!)
+AI-driven workflow that automatically creates GitHub issues from CloudWatch Investigations, triggering Amazon Q Developer to generate remediation pull requests.
+
+**Flow:** 503 Errors → CloudWatch Investigation → GitHub Issue → Q Developer PR
+
+**See:** [scratch.md](./scratch.md#cloudwatch-investigation--github-q-developer-integration) for setup instructions.
+
 ## 🚀 Quick Start
 
 ### Deploy Infrastructure
