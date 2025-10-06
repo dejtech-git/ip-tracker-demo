@@ -2,7 +2,7 @@
 
 ## Application Context for CloudWatch Investigations
 
-**Application:** Real-time IP Tracker
+**Application:** Real-time IP Tracker for ES Sharing
 - **Connection Limit:** 3 concurrent users per EC2 instance
 - **Behavior:** Returns HTTP 503 error with message "Maximum 3 users reached" when limit exceeded
 - **Auto Scaling:** Configured with min=1, max=10, desired=2
