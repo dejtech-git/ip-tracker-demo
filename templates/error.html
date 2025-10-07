@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Maximum Users Reached{% endblock %}
+{% block title %}Server Capacity Reached{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="alert alert-warning text-center">
-            <h2>Maximum user has reached. Please retry</h2>
-            <p class="mt-3">The maximum number of concurrent connections (20) has been reached.</p>
-            <p>Please try again in a few moments.</p>
-            <button class="btn btn-primary mt-3" onclick="window.location.reload()">Retry</button>
+            <h2>🚫 Server Capacity Reached</h2>
+            <p class="mt-3">We're currently at maximum capacity but scaling up to handle more users.</p>
+            <p>Please try again in a moment - new servers are being launched automatically.</p>
+            <button class="btn btn-primary mt-3" onclick="window.location.reload()">Try Again</button>
         </div>
     </div>
 </div>

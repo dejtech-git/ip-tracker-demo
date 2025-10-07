@@ -30,7 +30,9 @@ def index():
         print(f"Rate limit exceeded for IP: {ip}")
         return render_template('error.html'), 429
     
-    if get_instance_connection_count() >= 5:
+    # Check instance capacity with configurable limit
+    max_users = int(os.environ.get('MAX_USERS_PER_INSTANCE', 25))
+    if get_instance_connection_count() >= max_users:
         return render_template('error.html'), 503
     
     headers = extract_headers()
