@@ -12,6 +12,9 @@ export REDIS_HOST=$REDIS_HOST
 # Set SECRET_PATH environment variable
 export SECRET_PATH="app-x7k9m2n8"
 
+# Set maximum users per instance (configurable)
+export MAX_USERS_PER_INSTANCE="${MAX_USERS_PER_INSTANCE:-25}"
+
 # Create application directory
 mkdir -p /opt/ip-tracker
 cd /opt/ip-tracker
@@ -143,7 +146,8 @@ def get_instance_connection_count():
 @app.route('/')
 def index():
     ip = get_client_ip()
-    if get_instance_connection_count() >= 3:
+    max_users = int(os.getenv('MAX_USERS_PER_INSTANCE', 25))
+    if get_instance_connection_count() >= max_users:
         return render_template('error.html'), 503
     
     user_agent = request.headers.get('User-Agent', 'Unknown')
@@ -379,7 +383,7 @@ cat > templates/error.html << 'EOF'
             <div class="card-body text-center">
                 <h1 class="display-1">🚫</h1>
                 <h3>Sorry!</h3>
-                <p>Maximum 3 users reached. Try again later.</p>
+                <p>Server capacity reached. Please try again in a moment as we're scaling up to handle more users.</p>
                 <button class="btn btn-primary" onclick="location.reload()">Try Again</button>
             </div>
         </div>
@@ -391,6 +395,7 @@ EOF
 # Set environment variables
 echo "export REDIS_HOST=$REDIS_HOST" >> /etc/environment
 echo "export SECRET_PATH=$SECRET_PATH" >> /etc/environment
+echo "export MAX_USERS_PER_INSTANCE=$MAX_USERS_PER_INSTANCE" >> /etc/environment
 
 # Create systemd service
 cat > /etc/systemd/system/ip-tracker.service << EOF
@@ -407,6 +412,7 @@ Restart=always
 RestartSec=10
 Environment=REDIS_HOST=$REDIS_HOST
 Environment=SECRET_PATH=$SECRET_PATH
+Environment=MAX_USERS_PER_INSTANCE=$MAX_USERS_PER_INSTANCE
 
 [Install]
 WantedBy=multi-user.target

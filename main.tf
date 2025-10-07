@@ -385,12 +385,12 @@ resource "aws_autoscaling_group" "ip_tracker" {
   }
 }
 
-# Auto Scaling Policies
+# Auto Scaling Policies - More responsive scaling
 resource "aws_autoscaling_policy" "scale_up" {
   name                   = "ip-tracker-scale-up"
-  scaling_adjustment     = 1
+  scaling_adjustment     = 2  # Scale up by 2 instances for faster response
   adjustment_type        = "ChangeInCapacity"
-  cooldown               = 300
+  cooldown               = 180  # Reduced cooldown for faster scaling
   autoscaling_group_name = aws_autoscaling_group.ip_tracker.name
 }
 
@@ -402,21 +402,39 @@ resource "aws_autoscaling_policy" "scale_down" {
   autoscaling_group_name = aws_autoscaling_group.ip_tracker.name
 }
 
-# CloudWatch Alarms
+# CloudWatch Alarms - More responsive thresholds
 resource "aws_cloudwatch_metric_alarm" "high_connections" {
   alarm_name          = "ip-tracker-high-connections"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
+  evaluation_periods  = "1"  # Reduced from 2 for faster response
   metric_name         = "TargetConnectionErrorCount"
   namespace           = "AWS/ApplicationELB"
   period              = "60"
   statistic           = "Sum"
-  threshold           = "5"
-  alarm_description   = "Scale up when connection errors increase (5 per instance)"
+  threshold           = "2"  # Reduced threshold for earlier scaling
+  alarm_description   = "Scale up when connection errors increase"
   alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
   
   dimensions = {
     LoadBalancer = aws_lb.ip_tracker.arn_suffix
+  }
+}
+
+# Additional alarm based on request count per target
+resource "aws_cloudwatch_metric_alarm" "high_request_count" {
+  alarm_name          = "ip-tracker-high-request-count"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "RequestCountPerTarget"
+  namespace           = "AWS/ApplicationELB"
+  period              = "60"
+  statistic           = "Average"
+  threshold           = "15"  # Scale up when average requests per target exceed 15
+  alarm_description   = "Scale up when request count per target is high"
+  alarm_actions       = [aws_autoscaling_policy.scale_up.arn]
+  
+  dimensions = {
+    TargetGroup = aws_lb_target_group.ip_tracker.arn_suffix
   }
 }
 
@@ -428,8 +446,8 @@ resource "aws_cloudwatch_metric_alarm" "low_connections" {
   namespace           = "AWS/ApplicationELB"
   period              = "300"
   statistic           = "Average"
-  threshold           = "5"
-  alarm_description   = "Scale down when connections are low (under 5)"
+  threshold           = "3"  # Reduced threshold for more conservative scaling down
+  alarm_description   = "Scale down when connections are low"
   alarm_actions       = [aws_autoscaling_policy.scale_down.arn]
   
   dimensions = {
