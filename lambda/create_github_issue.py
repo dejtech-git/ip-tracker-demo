@@ -17,10 +17,10 @@ def lambda_handler(event, context):
     print(f"Investigation {investigation_id} completed with status: {status}")
     
     # Get investigation results
-    cloudwatch = boto3.client('cloudwatch')
+    aiops = boto3.client('aiops')
     
     try:
-        investigation = cloudwatch.describe_investigation(
+        investigation = aiops.get_investigation(
             InvestigationId=investigation_id
         )
         
@@ -133,6 +133,30 @@ variable "desired_capacity" {{
                 'statusCode': response.status_code,
                 'body': json.dumps({'error': response.text})
             }
+        
+        # Mark investigation as complete in DynamoDB
+        try:
+            dynamodb = boto3.resource('dynamodb')
+            table_name = os.environ.get('DYNAMODB_TABLE', 'ip-tracker-investigations')
+            table = dynamodb.Table(table_name)
+            
+            # Extract ALB ARN from investigation resources
+            resources = investigation.get('Resources', [])
+            alb_arn = next((r for r in resources if 'loadbalancer' in r), None)
+            
+            if alb_arn:
+                table.update_item(
+                    Key={'resource_arn': alb_arn},
+                    UpdateExpression='SET #status = :status, github_issue = :issue',
+                    ExpressionAttributeNames={'#status': 'status'},
+                    ExpressionAttributeValues={
+                        ':status': 'COMPLETED',
+                        ':issue': issue_url
+                    }
+                )
+                print(f"Marked investigation as COMPLETED in DynamoDB")
+        except Exception as e:
+            print(f"Failed to update DynamoDB: {e}")
             
     except Exception as e:
         print(f"Error processing investigation: {str(e)}")

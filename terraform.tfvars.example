@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and update values
+
+# Custom AMI configuration (optional - improves startup time)
+# Set to false for first deployment, then create AMI and set to true
+use_custom_ami = false
+custom_ami_id  = ""  # Add your AMI ID after creating it
+
+# Application configuration
+secret_path      = "app-x7k9m2n8"  # Random path for URL obscurity
+desired_capacity = 1
+min_size         = 1
+max_size         = 10
+
+# AWS region (optional - defaults to us-east-1)
+# aws_region = "us-east-1"

@@ -14,7 +14,7 @@ Hands-on demonstration of AWS CloudWatch Investigations for AI-assisted troubles
 
 **See:** [CLOUDWATCH_INVESTIGATIONS_DEMO.md](./CLOUDWATCH_INVESTIGATIONS_DEMO.md) for demo scenarios and instructions.
 
-### 3. Automated Incident Response (NEW!)
+### 3. Automated Incident Response
 AI-driven workflow that automatically creates GitHub issues from CloudWatch Investigations, triggering Amazon Q Developer to generate remediation pull requests.
 
 **Flow:** 503 Errors → CloudWatch Investigation → GitHub Issue → Q Developer PR
@@ -23,17 +23,32 @@ AI-driven workflow that automatically creates GitHub issues from CloudWatch Inve
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- AWS CLI configured with credentials
+- Terraform installed (v1.0+)
+- GitHub personal access token (optional, for automated issue creation)
+
 ### Deploy Infrastructure
+
+1. **Clone and configure:**
+```bash
+cd Demo1
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars if needed
+```
+
+2. **Deploy:**
 ```bash
 terraform init
 terraform apply
 ```
 
-### Access Application
-Use the `website_url` output from Terraform:
+3. **Access application:**
+```bash
+terraform output website_url
 ```
-http://ip-tracker-alb-306488846.us-east-1.elb.amazonaws.com/app-x7k9m2n8/
-```
+
+**For detailed deployment instructions:** See [DEPLOYMENT_NEW_ACCOUNT.md](./DEPLOYMENT_NEW_ACCOUNT.md)
 
 ## 📋 Workshop Flow
 
@@ -56,12 +71,20 @@ http://ip-tracker-alb-306488846.us-east-1.elb.amazonaws.com/app-x7k9m2n8/
 
 ```
 Demo1/
-├── README.md                              # This file - workshop overview
+├── README.md                              # This file
+├── DEPLOYMENT_NEW_ACCOUNT.md              # Complete deployment guide
+├── AMI_SETUP.md                           # Custom AMI optimization guide
 ├── IP-Tracker-app-spec.md                 # Application specifications
 ├── CLOUDWATCH_INVESTIGATIONS_DEMO.md      # Demo scenarios guide
-├── scratch.md                             # Workshop notes and highlights
 ├── main.tf                                # Terraform infrastructure
-├── user_data_working.sh                   # EC2 bootstrap script
+├── cloudwatch_investigation_automation.tf # Investigation automation
+├── investigation_deduplication.tf         # DynamoDB deduplication
+├── user_data_working.sh                   # EC2 bootstrap (full install)
+├── user_data_optimized.sh                 # EC2 bootstrap (AMI-based)
+├── terraform.tfvars.example               # Configuration template
+├── lambda/                                # Lambda functions
+│   ├── start_investigation.py
+│   └── create_github_issue.py
 └── templates/                             # Application templates
 ```
 
@@ -72,7 +95,35 @@ Demo1/
 - **Real-time WebSocket** - shows live connection status
 - **CloudWatch Logs** - system logs for investigations
 - **CloudTrail integration** - tracks infrastructure changes
+- **Automated incident response** - GitHub issue creation
+- **Custom AMI support** - 70% faster instance startup
+
+## ⚡ Performance Optimization
+
+The project supports custom AMI for faster deployments:
+- **Standard:** 3-5 minute instance startup
+- **Optimized:** 60-90 second instance startup
+
+See [AMI_SETUP.md](./AMI_SETUP.md) for details.
+
+## 🔐 Security Notes
+
+- No credentials are stored in code
+- GitHub token stored in AWS Secrets Manager
+- Use IAM roles for AWS service access
+- Application URL uses random path for obscurity
 
 ## 📝 Workshop Notes
 
 Track your progress and highlights in [scratch.md](./scratch.md)
+
+## 🧹 Clean Up
+
+```bash
+terraform destroy
+```
+
+**Note:** Custom AMIs are not deleted by Terraform. Delete manually if created:
+```bash
+aws ec2 deregister-image --image-id <ami-id>
+```

@@ -41,6 +41,22 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+# Custom AMI configuration
+variable "use_custom_ami" {
+  default     = false
+  description = "Use custom AMI with pre-installed app (set to true after creating AMI)"
+}
+
+variable "custom_ami_id" {
+  default     = ""
+  description = "Custom AMI ID with IP Tracker pre-installed (leave empty to use base Amazon Linux)"
+}
+
+locals {
+  ami_id = var.use_custom_ami && var.custom_ami_id != "" ? var.custom_ami_id : data.aws_ami.amazon_linux.id
+  user_data_file = var.use_custom_ami && var.custom_ami_id != "" ? "user_data_optimized.sh" : "user_data_working.sh"
+}
+
 # VPC Configuration
 resource "aws_vpc" "ip_tracker_vpc" {
   cidr_block           = "10.0.0.0/16"
@@ -251,7 +267,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # Launch Template
 resource "aws_launch_template" "ip_tracker" {
   name_prefix   = "ip-tracker-"
-  image_id      = data.aws_ami.amazon_linux.id
+  image_id      = local.ami_id
   instance_type = var.instance_type
   
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
@@ -266,7 +282,10 @@ resource "aws_launch_template" "ip_tracker" {
     instance_metadata_tags      = "disabled"
   }
   
-  user_data = base64encode(file("user_data_working.sh"))
+  user_data = local.user_data_file == "user_data_optimized.sh" ? base64encode(templatefile("user_data_optimized.sh", {
+    secret_path = var.secret_path
+    redis_host  = aws_elasticache_replication_group.ip_tracker.primary_endpoint_address
+  })) : base64encode(file("user_data_working.sh"))
   
   tag_specifications {
     resource_type = "instance"
