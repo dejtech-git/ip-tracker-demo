@@ -2,6 +2,8 @@
 
 This repository contains AWS infrastructure and application code for demonstrating CloudWatch Investigations and automated incident response.
 
+![IP Tracker Application](./images/ip-tracker-sample.png)
+
 ## 📦 Components
 
 ### 1. IP Tracker Application
@@ -30,8 +32,8 @@ AI-driven workflow that automatically creates GitHub issues from CloudWatch Inve
 
 1. **Clone and configure:**
 ```bash
-git clone <your-repo-url>
-cd Demo1
+git clone https://github.com/dejtech-git/ip-tracker-demo.git
+cd ip-tracker-demo
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars if needed (defaults work fine)
 ```
