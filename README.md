@@ -1,6 +1,6 @@
 # Real-time IP Tracker for ES Sharing - Workshop Demo
 
-This repository contains two main components for the AWS workshop:
+This repository contains AWS infrastructure and application code for demonstrating CloudWatch Investigations and automated incident response.
 
 ## 📦 Components
 
@@ -19,8 +19,6 @@ AI-driven workflow that automatically creates GitHub issues from CloudWatch Inve
 
 **Flow:** 503 Errors → CloudWatch Investigation → GitHub Issue → Q Developer PR
 
-**See:** [scratch.md](./scratch.md#cloudwatch-investigation--github-q-developer-integration) for setup instructions.
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -32,9 +30,10 @@ AI-driven workflow that automatically creates GitHub issues from CloudWatch Inve
 
 1. **Clone and configure:**
 ```bash
+git clone <your-repo-url>
 cd Demo1
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars if needed
+# Edit terraform.tfvars if needed (defaults work fine)
 ```
 
 2. **Deploy:**
@@ -45,7 +44,11 @@ terraform apply
 
 3. **Access application:**
 ```bash
+# Get the application URL
 terraform output website_url
+
+# Example output:
+# http://ip-tracker-alb-<random>.us-east-1.elb.amazonaws.com/app-<random>/
 ```
 
 **For detailed deployment instructions:** See [DEPLOYMENT_NEW_ACCOUNT.md](./DEPLOYMENT_NEW_ACCOUNT.md)
@@ -112,10 +115,37 @@ See [AMI_SETUP.md](./AMI_SETUP.md) for details.
 - GitHub token stored in AWS Secrets Manager
 - Use IAM roles for AWS service access
 - Application URL uses random path for obscurity
+- Each deployment generates unique ALB DNS and secret path
 
-## 📝 Workshop Notes
+## 📝 Configuration
 
-Track your progress and highlights in [scratch.md](./scratch.md)
+### Required Configuration
+Copy `terraform.tfvars.example` to `terraform.tfvars` and customize if needed:
+
+```hcl
+# Custom AMI (optional - set after creating AMI)
+use_custom_ami = false
+custom_ami_id  = ""
+
+# Application configuration (defaults work fine)
+secret_path      = "app-x7k9m2n8"  # Random path
+desired_capacity = 1
+min_size         = 1
+max_size         = 10
+```
+
+### Add GitHub Token (Optional)
+For automated GitHub issue creation:
+
+```bash
+# Get secret ARN
+SECRET_ARN=$(terraform output -raw github_token_secret_arn)
+
+# Add your token
+aws secretsmanager put-secret-value \
+  --secret-id $SECRET_ARN \
+  --secret-string "ghp_your_token_here"
+```
 
 ## 🧹 Clean Up
 
@@ -127,3 +157,18 @@ terraform destroy
 ```bash
 aws ec2 deregister-image --image-id <ami-id>
 ```
+
+## 📚 Additional Documentation
+
+- [DEPLOYMENT_NEW_ACCOUNT.md](./DEPLOYMENT_NEW_ACCOUNT.md) - Complete deployment guide
+- [AMI_SETUP.md](./AMI_SETUP.md) - Custom AMI creation for faster startups
+- [CLOUDWATCH_INVESTIGATIONS_DEMO.md](./CLOUDWATCH_INVESTIGATIONS_DEMO.md) - Demo scenarios
+- [IP-Tracker-app-spec.md](./IP-Tracker-app-spec.md) - Application specifications
+
+## 🤝 Contributing
+
+This is a workshop demo project. Feel free to fork and customize for your needs.
+
+## 📄 License
+
+This project is provided as-is for educational purposes.
